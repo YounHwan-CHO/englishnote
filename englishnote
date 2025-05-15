@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My English Journal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+    }
+
+    .form-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .entry {
+      background: #fff;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      font-size: 0.95rem;
+    }
+
+    .small-button {
+      width: auto;
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      margin: 5px 2px;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      input, textarea, button {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>📘 My English Journal</h1>
+
+  <div class="form-container">
+    <input type="text" id="sentence" placeholder="Enter English sentence" />
+    <input type="text" id="meaning" placeholder="Enter Korean meaning" />
+    <textarea id="notes" placeholder="Enter notes or vocabulary"></textarea>
+    <button onclick="addEntry()">Save Sentence</button>
+    <button class="small-button" onclick="showTrash()">🗑 휴지통 보기</button>
+    <button class="small-button" onclick="displayEntries()">📄 문장 보기</button>
+  </div>
+
+  <div id="daily-card" class="entry" style="margin-top: 30px;">
+    <h3>📘 오늘 이 문장 어때요?</h3>
+    <div id="daily-content">문장을 불러오는 중...</div>
+  </div>
+
+  <div id="entries"></div>
+
+  <script>
+    let entries = [];
+
+    function showDailySentence() {
+      const savedEntries = JSON.parse(localStorage.getItem("englishJournal") || "[]");
+      if (savedEntries.length === 0) {
+        document.getElementById("daily-content").innerText = "아직 저장된 문장이 없어요 😢";
+        return;
+      }
+      const today = new Date().toISOString().split("T")[0];
+      const hash = [...today].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const index = hash % savedEntries.length;
+      const e = savedEntries[index];
+
+      document.getElementById("daily-content").innerHTML = `
+        <p><strong>${e.date}</strong></p>
+        ✏️ <strong>Sentence:</strong> ${e.sentence}<br/>
+        🇰🇷 <strong>Meaning:</strong> ${e.meaning}<br/>
+        🧠 <strong>Notes:</strong> ${e.notes}
+      `;
+    }
+
+    function addEntry() {
+      const sentence = document.getElementById("sentence").value;
+      const meaning = document.getElementById("meaning").value;
+      const notes = document.getElementById("notes").value;
+
+      if (!sentence) return alert("Please enter a sentence!");
+
+      const entry = {
+        sentence,
+        meaning,
+        notes,
+        date: new Date().toLocaleDateString()
+      };
+
+      entries.push(entry);
+      localStorage.setItem("englishJournal", JSON.stringify(entries));
+      displayEntries();
+
+      document.getElementById("sentence").value = "";
+      document.getElementById("meaning").value = "";
+      document.getElementById("notes").value = "";
+    }
+
+    function deleteEntry(index) {
+      const trashed = JSON.parse(localStorage.getItem("trashJournal") || "[]");
+      trashed.push(entries[index]);
+      localStorage.setItem("trashJournal", JSON.stringify(trashed));
+
+      entries.splice(index, 1);
+      localStorage.setItem("englishJournal", JSON.stringify(entries));
+      displayEntries();
+    }
+
+    function displayEntries() {
+      const container = document.getElementById("entries");
+      container.innerHTML = "";
+      entries.forEach((e, i) => {
+        container.innerHTML += `
+          <div class="entry">
+            <strong>${e.date}</strong><br/>
+            ✏️ <strong>Sentence:</strong> ${e.sentence}<br/>
+            🇰🇷 <strong>Meaning:</strong> ${e.meaning}<br/>
+            🧠 <strong>Notes:</strong> ${e.notes}<br/>
+            <button class="small-button" onclick="deleteEntry(${i})">🗑 삭제</button>
+          </div>
+        `;
+      });
+    }
+
+    function showTrash() {
+      const trash = JSON.parse(localStorage.getItem("trashJournal") || "[]");
+      const container = document.getElementById("entries");
+      container.innerHTML = "<h3>🗑️ 휴지통</h3>";
+
+      if (trash.length === 0) {
+        container.innerHTML += "<p>휴지통이 비어 있어요.</p>";
+        return;
+      }
+
+      trash.forEach((e, i) => {
+        container.innerHTML += `
+          <div class="entry">
+            <strong>${e.date}</strong><br/>
+            ✏️ <strong>Sentence:</strong> ${e.sentence}<br/>
+            🇰🇷 <strong>Meaning:</strong> ${e.meaning}<br/>
+            🧠 <strong>Notes:</strong> ${e.notes}<br/>
+            <button class="small-button" onclick="restoreEntry(${i})">♻️ 복원</button>
+            <button class="small-button" onclick="deletePermanently(${i})">❌ 영구삭제</button>
+          </div>
+        `;
+      });
+    }
+
+    function restoreEntry(index) {
+      const trash = JSON.parse(localStorage.getItem("trashJournal") || "[]");
+      const restored = trash.splice(index, 1)[0];
+      entries.push(restored);
+
+      localStorage.setItem("trashJournal", JSON.stringify(trash));
+      localStorage.setItem("englishJournal", JSON.stringify(entries));
+      displayEntries();
+    }
+
+    function deletePermanently(index) {
+      const trash = JSON.parse(localStorage.getItem("trashJournal") || "[]");
+      trash.splice(index, 1);
+      localStorage.setItem("trashJournal", JSON.stringify(trash));
+      showTrash();
+    }
+
+    window.onload = function () {
+      const savedEntries = localStorage.getItem("englishJournal");
+      if (savedEntries) {
+        entries = JSON.parse(savedEntries);
+        displayEntries();
+      }
+      showDailySentence();
+    };
+  </script>
+</body>
+</html>
